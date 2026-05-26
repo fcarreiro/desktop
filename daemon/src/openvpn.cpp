@@ -308,7 +308,16 @@ void OpenVPNProcess::handleManagementLine(const QString& line)
         else if (params[1] == QLatin1String("CONNECTED"))
             setState(Connected);
         else if (params[1] == QLatin1String("RECONNECTING"))
+        {
+            // Include the reconnect reason from OpenVPN management (param[2]),
+            // this helps diagnose long drop-detection intervals (such as
+            // ping-restart/inactive driven reconnects).
+            qWarning().nospace() << "OpenVPN entered RECONNECTING"
+                << " reason=" << description
+                << " remote=" << remoteIP << ":" << remotePort
+                << " local=" << localIP << ":" << localPort;
             setState(Reconnecting);
+        }
         else if (params[1] == QLatin1String("EXITING"))
         {
             if (description == QLatin1String("tls-error"))

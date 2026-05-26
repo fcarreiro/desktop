@@ -461,10 +461,10 @@ bool OpenVPNMethod::writeOpenVPNConfig(QFile& outFile,
     // this.  It's possible that this has to do with the default 'ping-restart'
     // vs. 'ping-exit'.
     //
-    // Enable ping-exit 25 to attempt to detect connection loss more quickly and
+    // Enable ping-exit 30 to attempt to detect connection loss more quickly and
     // ensure OpenVPN exits on connection loss.
     out << "ping 5" << endl;
-    out << "ping-exit 25" << endl;
+    out << "ping-exit 30" << endl;
 
     out << "persist-remote-ip" << endl;
     out << "resolv-retry 0" << endl;
@@ -474,6 +474,11 @@ bool OpenVPNMethod::writeOpenVPNConfig(QFile& outFile,
     out << "tls-client" << endl;
     out << "tls-exit" << endl;
     out << "remote-cert-tls server" << endl;
+    // Keep local liveness timers authoritative so timeout behavior stays
+    // consistent if a server pushes keepalive/ping/inactive options.
+    out << "pull-filter ignore \"ping \"" << endl;
+    out << "pull-filter ignore \"ping-restart \"" << endl;
+    out << "pull-filter ignore \"inactive \"" << endl;
     out << "auth-user-pass" << endl;
     out << "pull-filter ignore \"auth-token\"" << endl;
 

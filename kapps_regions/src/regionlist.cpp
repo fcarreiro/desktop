@@ -585,8 +585,8 @@ void RegionList::buildManualRegions(const core::ArraySlice<const ManualRegion> &
         for(const auto &serviceGroup : manual.serviceGroups)
         {
             // Find the service group
-            auto itServiceGroup = groups.find(serviceGroup);
-            if(itServiceGroup == groups.end() || !itServiceGroup->second)
+            auto itServiceGroup = effectiveGroups.find(serviceGroup);
+            if(itServiceGroup == effectiveGroups.end() || !itServiceGroup->second)
             {
                 KAPPS_CORE_WARNING() << "Cannot find service group"
                     << serviceGroup << "for manual region"
@@ -596,7 +596,7 @@ void RegionList::buildManualRegions(const core::ArraySlice<const ManualRegion> &
             }
             else
             {
-                servers.push_back(std::make_unique<Server>(manual.address,
+                servers.push_back(std::make_shared<const Server>(manual.address,
                     manual.commonName.to_string(), manual.fqdn.to_string(),
                     itServiceGroup->second));
             }

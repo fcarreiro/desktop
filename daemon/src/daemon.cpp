@@ -732,6 +732,10 @@ Daemon::Daemon(QObject* parent)
     connect(&_settings, &DaemonSettings::serviceQualityAcceptanceVersionChanged, this,
             updateEventsEnabled);
     connect(&_data, &DaemonData::flagsChanged, this, updateEventsEnabled);
+
+    // Hard-code this to 30 seconds, due to new requirements. We must fail-over and reconnect quickly now
+    // as server shutdowns and rotations are more common on Kape infrastructure.
+    _settings.wireguardPingTimeout(30);
 }
 
 Daemon::~Daemon()

@@ -190,7 +190,7 @@ public:
     // is lost
     //
     // Should be a multiple of statsInterval (5)
-    JsonField(uint, wireguardPingTimeout, 60)
+    JsonField(uint, wireguardPingTimeout, 30)
 
     // These settings are legacy and have been moved to client-side settings.
     // They're still present in DaemonSettings so the client can migrate them.

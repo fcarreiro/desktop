@@ -27,6 +27,8 @@
 
 namespace
 {
+    const QString wireguardPingTimeoutType{QStringLiteral("wireguardpingtimeout")};
+
     // 'set' supports fewer value types than 'get'.
     const std::map<QString, QString> _setSupportedTypes
     {
@@ -34,7 +36,8 @@ namespace
         {GetSetType::protocol, QStringLiteral("Select a VPN protocol")},
         {GetSetType::region, QStringLiteral("Select a region (or \"auto\")")},
         {GetSetType::requestPortForward, QStringLiteral("Whether to request a forwarded port on the next connection attempt")},
-        {GetSetType::allowLAN, QStringLiteral("Whether to allow LAN traffic")}
+        {GetSetType::allowLAN, QStringLiteral("Whether to allow LAN traffic")},
+        {wireguardPingTimeoutType, QStringLiteral("Set WireGuard ping timeout in seconds (allowed: 15, 30, 60, 120)")}
     };
 
     QJsonArray buildRpcArgs(CliClient &client, const QStringList &params)
@@ -87,6 +90,23 @@ namespace
             QJsonValue newValue = enabled;
             QJsonObject newSettings;
             newSettings.insert(QStringLiteral("allowLAN"), newValue);
+            return {newSettings};
+        }
+        else if(params[1] == wireguardPingTimeoutType)
+        {
+            bool ok{false};
+            int timeoutSeconds = params[2].toInt(&ok);
+            if(!ok || (timeoutSeconds != 15 && timeoutSeconds != 30 &&
+                timeoutSeconds != 60 && timeoutSeconds != 120))
+            {
+                errln() << "Unexpected value for" << wireguardPingTimeoutType << ":" << params[2]
+                    << "- expected one of: 15, 30, 60, 120";
+                throw Error{HERE, Error::Code::CliInvalidArgs};
+            }
+
+            QJsonObject newSettings;
+            newSettings.insert(QStringLiteral("wireguardPingTimeout"),
+                               timeoutSeconds);
             return {newSettings};
         }
 
