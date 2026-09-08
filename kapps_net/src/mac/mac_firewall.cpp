@@ -175,7 +175,31 @@ void MacFirewall::applyRules(const FirewallParams &params)
         dnsCacheFlush();
     }
 
-    _pFilter->setFilterEnabled("400.allowPIA", params.allowPIA);
+    // 400.allowPIA is scoped to exclude the tunnel interface: a pf rule with a
+    // group clause forces pf_socket_lookup(), and so tcbinfo.ipi_lock, for
+    // every packet that reaches it, which deadlocks the kernel on the tunnel
+    // output path.  See daemon/res/pf/400.allowPIA.conf.
+    //
+    // $interface must never be empty -- "on ! " does not parse, and the anchor
+    // would then load with no rules at all, costing the daemon its exemption
+    // exactly when the kill switch is engaged.  allowPIA is
+    // (blockAll || blockIPv6 || blockDNS), which is true while disconnected, so
+    // tunnelDeviceName can legitimately be empty here.  lo0 is "set skip"ped by
+    // 000.allowLoopback, so "on ! lo0" behaves as the unscoped rule did.
+    const std::string allowPIAExcludedInterface = params.tunnelDeviceName.empty()
+        ? std::string{"lo0"} : params.tunnelDeviceName;
+    // Unlike 500.blockDNS below, allowPIA does not toggle across a connection:
+    // it is (blockAll || blockIPv6 || blockDNS), so it is typically already
+    // enabled before a tunnel exists.  enableAnchor() leaves a non-empty anchor
+    // alone, so without forcing a reload the anchor would keep the value
+    // captured at daemon start -- lo0 -- for the whole session, and the tunnel
+    // would never actually be excluded.
+    const bool allowPIAInterfaceChanged =
+        _allowPIAInterface != allowPIAExcludedInterface;
+    _allowPIAInterface = allowPIAExcludedInterface;
+    _pFilter->setFilterEnabled("400.allowPIA", params.allowPIA,
+        { {"interface", allowPIAExcludedInterface} },
+        allowPIAInterfaceChanged);
     _pFilter->setFilterEnabled("500.blockDNS", dnsLeakProtection.macBlockDNS, { {"interface", params.tunnelDeviceName} });
     _pFilter->setAnchorTable("500.blockDNS", dnsLeakProtection.macBlockDNS, "localdns", dnsLeakProtection.localDnsServers);
     _pFilter->setAnchorTable("500.blockDNS", dnsLeakProtection.macBlockDNS, "tunneldns", dnsLeakProtection.tunnelDnsServers);

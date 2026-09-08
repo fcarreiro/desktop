@@ -60,21 +60,27 @@ public:
     void install();
     void uninstall();
     bool isInstalled();
+    // forceReload reloads the anchor even if it already has rules.  Needed when
+    // a macro value has changed, because the default path deliberately leaves a
+    // non-empty anchor alone (see enableAnchor()).
     void enableAnchor(const kapps::core::StringSlice &anchor,
                       const kapps::core::StringSlice &modifier,
-                      const MacroPairs &macroPairs);
+                      const MacroPairs &macroPairs,
+                      bool forceReload = false);
     void disableAnchor(const kapps::core::StringSlice &anchor,
                        const kapps::core::StringSlice &modifier);
     void setAnchorEnabled(const kapps::core::StringSlice &anchor,
                           const kapps::core::StringSlice &modifier,
-                          bool enable, const MacroPairs &macroPairs);
+                          bool enable, const MacroPairs &macroPairs,
+                          bool forceReload = false);
     void setAnchorTable(const kapps::core::StringSlice &anchor, bool enabled,
                         const kapps::core::StringSlice &table,
                         const std::vector<std::string> &items);
 
     // Manipulate anchors containing filter rules
     void setFilterEnabled(const kapps::core::StringSlice &anchor, bool enable,
-                          const MacroPairs &macroPairs={});
+                          const MacroPairs &macroPairs={},
+                          bool forceReload = false);
     void setFilterWithRules(const kapps::core::StringSlice &anchor, bool enabled,
                             const std::vector<std::string> &rules);
 

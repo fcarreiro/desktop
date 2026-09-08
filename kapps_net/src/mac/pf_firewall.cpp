@@ -138,8 +138,26 @@ bool PFFirewall::isInstalled()
 
 void PFFirewall::enableAnchor(const kapps::core::StringSlice &anchor,
                               const kapps::core::StringSlice &modifier,
-                              const MacroPairs &macroPairs)
+                              const MacroPairs &macroPairs,
+                              bool forceReload)
 {
+    // An anchor that already has rules is normally left alone, so that
+    // repeated applyRules() calls do not churn pf or reset rule counters.
+    // That also means macro values are only ever substituted while the anchor
+    // is empty, so a caller whose macros can change at run time must pass
+    // forceReload to have the new values take effect.
+    //
+    // The reload is a single pfctl invocation ("-F all ... -f ..."), so the
+    // anchor is not left empty in between -- important for anchors that grant
+    // an exemption from 100.blockAll.
+    if(forceReload)
+    {
+        execute(qs::format("echo '%: RELOAD' ; pfctl -q -a '%/%' -F all % -f '%/pf/%.%.conf'",
+            anchor, _rootAnchor, anchor, getMacroArgs(macroPairs),
+            _config.resourceDir, _rootAnchor, anchor));
+        return;
+    }
+
     execute(qs::format("if pfctl -q -a '%/%' -s % 2> /dev/null | grep -q . ; then echo '%: ON' ; else echo '%: OFF -> ON' ; pfctl -q -a '%/%' -F all % -f '%/pf/%.%.conf' ; fi", _rootAnchor, anchor, modifier, anchor,
         anchor, _rootAnchor, anchor, getMacroArgs(macroPairs), _config.resourceDir, _rootAnchor, anchor));
 }
@@ -152,10 +170,10 @@ void PFFirewall::disableAnchor(const kapps::core::StringSlice &anchor,
 
 void PFFirewall::setAnchorEnabled(const kapps::core::StringSlice &anchor,
                                   const kapps::core::StringSlice &modifier, bool enable,
-                                  const MacroPairs &macroPairs)
+                                  const MacroPairs &macroPairs, bool forceReload)
 {
     if(enable)
-        enableAnchor(anchor, modifier, macroPairs);
+        enableAnchor(anchor, modifier, macroPairs, forceReload);
     else
         disableAnchor(anchor, modifier);
 }
@@ -171,9 +189,10 @@ void PFFirewall::setAnchorTable(const kapps::core::StringSlice &anchor,
 }
 
 void PFFirewall::setFilterEnabled(const kapps::core::StringSlice &anchor,
-                                  bool enable, const MacroPairs &macroPairs)
+                                  bool enable, const MacroPairs &macroPairs,
+                                  bool forceReload)
 {
-    setAnchorEnabled(anchor, "rules", enable, macroPairs);
+    setAnchorEnabled(anchor, "rules", enable, macroPairs, forceReload);
 }
 
 void PFFirewall::setFilterWithRules(const kapps::core::StringSlice &anchor,

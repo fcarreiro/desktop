@@ -108,6 +108,10 @@ private:
     // Thread used to run the split tunnel implementation asynchronously.
     core::nullable_t<core::PollThread> _pSplitTunnelWorker;
     BoundRouteUpdater _boundRouteUpdater;
+    // The $interface value last substituted into 400.allowPIA.  PFFirewall only
+    // substitutes macros while an anchor is empty, so we have to notice when
+    // this changes and force a reload.  See applyRules().
+    std::string _allowPIAInterface;
     // Split tunnel implementation based on Apple's transparent proxy APIs
     core::nullable_t<TransparentProxy> _pTransparentProxy;
 };
